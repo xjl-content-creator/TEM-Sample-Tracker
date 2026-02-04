@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEM Grid Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 2.5em;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .search-container {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .search-container label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .grid-bank {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .grid-card {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .grid-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-color: #667eea;
+        }
+
+        .grid-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            text-align: center;
+        }
+
+        .grid-preview-container {
+            position: relative;
+            width: 100%;
+            max-height: 240px;
+            margin: 15px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .grid-preview {
+            width: 200px;
+            height: 200px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .grid-card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .sample-count {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background: white;
+            max-width: 700px;
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 15px;
+            position: relative;
+        }
+
+        .modal h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+        }
+
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: normal;
+        }
+
+        .grid-editor-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin: 20px auto;
+            height: 600px;
+        }
+
+        .grid-editor-canvas {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 1;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            display: block;
+        }
+
+        .grid-editor-svg {
+            width: 100%;
+            height: 100%;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+        }
+        
+        .grid-editor-label {
+            position: absolute;
+            font-size: 14px;
+            font-weight: bold;
+            color: #667eea;
+            text-align: center;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .sample-input-overlay {
+            position: absolute;
+            padding: 6px 10px;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 5px;
+            font-size: 14px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 10;
+            width: 150px;
+            max-width: 150px;
+        }
+
+        .sample-input-overlay:focus {
+            outline: none;
+            border-color: #5568d3;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 28px;
+            color: #999;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .grid-detail-canvas {
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+            aspect-ratio: 1;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin: 20px auto;
+            background: white;
+            display: block;
+        }
+
+        .no-grids {
+            text-align: center;
+            color: #999;
+            padding: 60px 20px;
+            font-size: 1.2em;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+            
+            .grid-bank {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 TEM Grid Tracker</h1>
+        
+        <div class="controls">
+            <div class="search-container">
+                <label for="searchGrid">Search Grid Name:</label>
+                <input type="text" id="searchGrid" placeholder="Enter grid name...">
+            </div>
+            
+            <div class="search-container">
+                <label for="searchSample">Search Sample Name:</label>
+                <input type="text" id="searchSample" placeholder="Enter sample name...">
+            </div>
+            
+            <div style="display: flex; align-items: flex-end;">
+                <button class="btn btn-primary" onclick="openAddGridModal()">+ Add Grid</button>
+            </div>
+        </div>
+
+        <div id="gridBank" class="grid-bank">
+            <div class="no-grids">No grids yet. Click "Add Grid" to get started!</div>
+        </div>
+    </div>
+
+    <!-- Add Grid Modal -->
+    <div id="addGridModal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeAddGridModal()">&times;</button>
+            <h2>Add New Grid</h2>
+            
+            <div class="form-group">
+                <label for="gridName">Grid Name:</label>
+                <input type="text" id="gridName" placeholder="e.g., Grid #23">
+                <div id="gridNameError" style="color: #e74c3c; font-size: 14px; margin-top: 5px; display: none;">Please enter a grid name</div>
+            </div>
+
+            <div class="form-group">
+                <label>Orientation:</label>
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="orientation" value="3" checked>
+                        3-Sample
+                    </label>
+                    <label>
+                        <input type="radio" name="orientation" value="4">
+                        4-Sample
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Click on each position to enter sample name:</label>
+                <div class="grid-editor-container" id="editorContainer">
+                    <canvas id="gridEditorCanvas" class="grid-editor-canvas" width="600" height="600"></canvas>
+                </div>
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeAddGridModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveGrid()">Save Grid</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Grid Modal -->
+    <div id="viewGridModal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeViewGridModal()">&times;</button>
+            <h2 id="viewGridTitle"></h2>
+            <canvas id="gridDetailCanvas" class="grid-detail-canvas" width="500" height="500"></canvas>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="editGrid()">Edit</button>
+                <button class="btn btn-danger" onclick="deleteCurrentGrid()">Delete Grid</button>
+                <button class="btn btn-secondary" onclick="closeViewGridModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="savingIndicator" style="position: fixed; bottom: 20px; right: 20px; background: #667eea; color: white; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); display: none; z-index: 1001; font-weight: 600;">
+        💾 Saving... Don't close the tab!
+    </div>
+
+    <script>
+        let grids = [];
+        let currentViewGrid = null;
+        let editorSamples = ['', '', '', ''];
+        let activeInput = null;
+        let isSaving = false;  // Track saving state
+
+        // Load grids from storage on page load
+        // Google Sheets configuration
+        const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbylMxK_6PnS_Ahx-oCu-cCfp2EhDrE5Mr0bmKfPnPmE94TFahQl_HsAJKXmjTKDt9-v/exec';
+
+        // Load grids from Google Sheets
+        async function loadGrids() {
+            try {
+                const response = await fetch(SHEETS_URL);
+                const data = await response.json();
+                grids = data || [];
+                sortGrids();
+                renderGridBank();
+            } catch (error) {
+                console.error('Error loading grids:', error);
+                grids = [];
+                renderGridBank();
+            }
+        }
+
+        // Save all grids to Google Sheets
+        async function saveAllGridsToSheets() {
+            const indicator = document.getElementById('savingIndicator');
+            isSaving = true;
+            indicator.style.display = 'block';
+            
+            try {
+                await fetch(SHEETS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(grids)
+                });
+                
+                // Success - hide after brief delay
+                setTimeout(() => {
+                    indicator.style.display = 'none';
+                    isSaving = false;
+                }, 800);
+            } catch (error) {
+                console.error('Error saving to Google Sheets:', error);
+                indicator.textContent = '⚠️ Save failed! Try again';
+                indicator.style.background = '#e74c3c';
+                setTimeout(() => {
+                    indicator.style.display = 'none';
+                    indicator.textContent = '💾 Saving... Don\'t close the tab!';
+                    indicator.style.background = '#667eea';
+                    isSaving = false;
+                }, 3000);
+            }
+        }
+
+        // Save grid to storage
+        async function saveGridToStorage(grid) {
+            await saveAllGridsToSheets();
+        }
+
+        // Delete grid from storage
+        async function deleteGridFromStorage(gridId) {
+            await saveAllGridsToSheets();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadGrids();
+            
+            document.querySelectorAll('input[name="orientation"]').forEach(radio => {
+                radio.addEventListener('change', () => {
+                    editorSamples = ['', '', '', ''];
+                    drawGridEditor();
+                });
+            });
+
+            document.getElementById('searchGrid').addEventListener('input', filterGrids);
+            document.getElementById('searchSample').addEventListener('input', filterGrids);
+        });
+
+        // Warn user if they try to close while saving
+        window.addEventListener('beforeunload', function(e) {
+            if (isSaving) {
+                e.preventDefault();
+                e.returnValue = 'Data is still saving! Are you sure you want to leave?';
+                return e.returnValue;
+            }
+        });
+
+        function openAddGridModal() {
+            document.getElementById('addGridModal').style.display = 'block';
+            document.getElementById('gridName').value = '';
+            editorSamples = ['', '', '', ''];
+            setTimeout(() => {
+                drawGridEditor();
+            }, 0);
+        }
+
+        function closeAddGridModal() {
+            document.getElementById('addGridModal').style.display = 'none';
+            if (activeInput) {
+                activeInput.remove();
+                activeInput = null;
+            }
+        }
+
+        function drawGridEditor() {
+            const canvas = document.getElementById('gridEditorCanvas');
+            if (!canvas) {
+                console.error('Canvas element not found!');
+                return;
+            }
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            const orientation = document.querySelector('input[name="orientation"]:checked').value;
+
+            ctx.clearRect(0, 0, width, height);
+
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = Math.min(width, height) * 0.32;
+
+            // Draw outer circle
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Draw mark on the right INSIDE
+            ctx.beginPath();
+            const markStart = centerX + radius - 25;
+            const markEnd = centerX + radius;
+            ctx.moveTo(markStart, centerY);
+            ctx.lineTo(markEnd, centerY);
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 5;
+            ctx.stroke();
+
+            if (orientation === '3') {
+                drawThreeSampleEditor(ctx, centerX, centerY, radius);
+            } else {
+                drawFourSampleEditor(ctx, centerX, centerY, radius);
+            }
+
+            // Add click handler
+            canvas.onclick = (e) => handleCanvasClick(e, canvas, centerX, centerY, radius, orientation);
+        }
+
+        
+        function drawThreeSampleEditor(ctx, cx, cy, r) {
+            const positions = [90, 180, 270]; // degrees
+            const crescentRadius = r * 0.45;
+            
+            // Save context and create clipping path
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.clip();
+            
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2.5;
+            
+            positions.forEach((angleDeg) => {
+                const angleRad = angleDeg * Math.PI / 180;
+                
+                // Semicircle center is ON the outer circle
+                const crescentCenterX = cx + r * Math.cos(angleRad);
+                const crescentCenterY = cy + r * Math.sin(angleRad);
+                
+                // Draw semicircle facing inward
+                const arcStart = (angleDeg + 90) * Math.PI / 180;
+                const arcEnd = (angleDeg + 270) * Math.PI / 180;
+                
+                ctx.beginPath();
+                ctx.arc(crescentCenterX, crescentCenterY, crescentRadius, arcStart, arcEnd);
+                ctx.stroke();
+            });
+            
+            // Restore context (remove clipping)
+            ctx.restore();
+            
+            // Draw sample labels INSIDE the crescents
+            const labelDist = r - crescentRadius * 0.5;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Position 1 (top)
+            if (editorSamples[0]) {
+                ctx.font = 'bold 48px Arial';
+                ctx.fillStyle = '#667eea';
+            } else {
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#999';
+            }
+            ctx.fillText(editorSamples[0] || '[Click to add]', cx, cy - labelDist);
+            
+            // Position 2 (left)
+            if (editorSamples[1]) {
+                ctx.font = 'bold 48px Arial';
+                ctx.fillStyle = '#667eea';
+            } else {
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#999';
+            }
+            ctx.fillText(editorSamples[1] || '[Click to add]', cx - labelDist, cy);
+            
+            // Position 3 (bottom)
+            if (editorSamples[2]) {
+                ctx.font = 'bold 48px Arial';
+                ctx.fillStyle = '#667eea';
+            } else {
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#999';
+            }
+            ctx.fillText(editorSamples[2] || '[Click to add]', cx, cy + labelDist);
+        }
+
+        function drawFourSampleEditor(ctx, cx, cy, r) {
+            const positions = [45, 135, 225, 315]; // degrees
+            const crescentRadius = r * 0.45;
+            
+            // Save context and create clipping path
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.clip();
+            
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2.5;
+            
+            positions.forEach((angleDeg) => {
+                const angleRad = angleDeg * Math.PI / 180;
+                
+                // Semicircle center is ON the outer circle
+                const crescentCenterX = cx + r * Math.cos(angleRad);
+                const crescentCenterY = cy + r * Math.sin(angleRad);
+                
+                // Draw semicircle facing inward
+                const arcStart = (angleDeg + 90) * Math.PI / 180;
+                const arcEnd = (angleDeg + 270) * Math.PI / 180;
+                
+                ctx.beginPath();
+                ctx.arc(crescentCenterX, crescentCenterY, crescentRadius, arcStart, arcEnd);
+                ctx.stroke();
+            });
+            
+            // Restore context
+            ctx.restore();
+            
+            // Draw sample labels INSIDE the crescents
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            const labelDist = r - crescentRadius * 0.5;
+            
+            for (let i = 0; i < 4; i++) {
+                if (editorSamples[i]) {
+                    ctx.font = 'bold 48px Arial';
+                    ctx.fillStyle = '#667eea';
+                } else {
+                    ctx.font = '14px Arial';
+                    ctx.fillStyle = '#999';
+                }
+                
+                const positions = [
+                    [cx + labelDist * 0.707, cy - labelDist * 0.707],
+                    [cx - labelDist * 0.707, cy - labelDist * 0.707],
+                    [cx - labelDist * 0.707, cy + labelDist * 0.707],
+                    [cx + labelDist * 0.707, cy + labelDist * 0.707]
+                ];
+                
+                ctx.fillText(editorSamples[i] || '[Click to add]', positions[i][0], positions[i][1]);
+            }
+        }
+
+        function handleCanvasClick(e, canvas, cx, cy, r, orientation) {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const canvasX = x * scaleX;
+            const canvasY = y * scaleY;
+
+            const dx = canvasX - cx;
+            const dy = canvasY - cy;
+            const distFromCenter = Math.sqrt(dx * dx + dy * dy);
+            let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+            if (angle < 0) angle += 360;
+
+            const crescentRadius = r * 0.45;
+            const minDist = r - crescentRadius;
+            const maxDist = r;
+
+            let position = -1;
+
+            if (orientation === '3') {
+                const positions = [
+                    { angle: 270, range: 60 },  // top - Position 1
+                    { angle: 180, range: 60 },  // left - Position 2
+                    { angle: 90, range: 60 }    // bottom - Position 3
+                ];
+                
+                for (let i = 0; i < positions.length; i++) {
+                    const pos = positions[i];
+                    const angleDiff = Math.abs(angle - pos.angle);
+                    const angleDiffAlt = Math.abs(angle - pos.angle - 360);
+                    
+                    if ((angleDiff < pos.range || Math.abs(angleDiffAlt) < pos.range) && 
+                        distFromCenter >= minDist && distFromCenter <= maxDist) {
+                        position = i;
+                        break;
+                    }
+                }
+            } else {
+                const positions = [
+                    { angle: 315, range: 50 },  // top-right - Position 1
+                    { angle: 225, range: 50 },  // top-left - Position 2
+                    { angle: 135, range: 50 },  // bottom-left - Position 3
+                    { angle: 45, range: 50 }    // bottom-right - Position 4
+                ];
+                
+                for (let i = 0; i < positions.length; i++) {
+                    const pos = positions[i];
+                    let angleDiff = Math.abs(angle - pos.angle);
+                    if (angleDiff > 180) angleDiff = 360 - angleDiff;
+                    
+                    if (angleDiff < pos.range && 
+                        distFromCenter >= minDist && distFromCenter <= maxDist) {
+                        position = i;
+                        break;
+                    }
+                }
+            }
+
+            if (position !== -1) {
+                showInputForPosition(position, x, y);
+            }
+        }
+
+        function showInputForPosition(position, x, y) {
+            if (activeInput) {
+                const oldPos = parseInt(activeInput.getAttribute('data-position'));
+                editorSamples[oldPos] = activeInput.value.trim();
+                activeInput.remove();
+            }
+
+            const container = document.getElementById('editorContainer');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'sample-input-overlay';
+            input.value = editorSamples[position];
+            input.placeholder = `Position ${position + 1}`;
+            input.style.left = `${x}px`;
+            input.style.top = `${y}px`;
+            input.style.transform = 'translate(-50%, -50%)';
+            input.setAttribute('data-position', position);
+
+            input.onblur = () => {
+                editorSamples[position] = input.value.trim();
+                input.remove();
+                activeInput = null;
+                drawGridEditor();
+            };
+
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    input.blur();
+                }
+            };
+
+            container.appendChild(input);
+            activeInput = input;
+            input.focus();
+            input.select();
+        }
+
+        async function saveGrid() {
+            const name = document.getElementById('gridName').value.trim();
+            const errorEl = document.getElementById('gridNameError');
+            
+            if (!name) {
+                errorEl.style.display = 'block';
+                document.getElementById('gridName').focus();
+                return;
+            }
+            errorEl.style.display = 'none';
+
+            if (activeInput) {
+                const position = parseInt(activeInput.getAttribute('data-position'));
+                editorSamples[position] = activeInput.value.trim();
+                activeInput.remove();
+                activeInput = null;
+            }
+
+            const orientation = document.querySelector('input[name="orientation"]:checked').value;
+            const sampleCount = parseInt(orientation);
+            
+            const editingId = document.getElementById('addGridModal').dataset.editingId;
+            
+            if (editingId) {
+                // Edit mode - update existing grid
+                const gridIndex = grids.findIndex(g => g.id === editingId);
+                if (gridIndex !== -1) {
+                    grids[gridIndex].name = name;
+                    grids[gridIndex].orientation = sampleCount;
+                    grids[gridIndex].samples = editorSamples.slice(0, sampleCount);
+                }
+                delete document.getElementById('addGridModal').dataset.editingId;
+            } else {
+                // Create mode - add new grid
+                const grid = {
+                    id: Date.now().toString(),
+                    name: name,
+                    orientation: sampleCount,
+                    samples: editorSamples.slice(0, sampleCount),
+                    createdAt: new Date().toISOString()
+                };
+                grids.push(grid);
+            }
+
+            // Update UI immediately
+            sortGrids();
+            renderGridBank();
+            closeAddGridModal();
+            
+            // Save to Google Sheets in background (don't wait)
+            saveAllGridsToSheets().catch(err => {
+                console.error('Background save failed:', err);
+            });
+        }
+
+        function sortGrids() {
+            grids.sort((a, b) => {
+                const regex = /(\D+)(\d+)/;
+                const aMatch = a.name.match(regex);
+                const bMatch = b.name.match(regex);
+
+                if (aMatch && bMatch) {
+                    const aText = aMatch[1];
+                    const bText = bMatch[1];
+                    const aNum = parseInt(aMatch[2]);
+                    const bNum = parseInt(bMatch[2]);
+
+                    if (aText === bText) {
+                        return aNum - bNum;
+                    }
+                    return aText.localeCompare(bText);
+                }
+
+                return a.name.localeCompare(b.name);
+            });
+        }
+
+        function renderGridBank() {
+            const container = document.getElementById('gridBank');
+            
+            if (grids.length === 0) {
+                container.innerHTML = '<div class="no-grids">No grids yet. Click "Add Grid" to get started!</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+            grids.forEach(grid => {
+                const card = createGridCard(grid);
+                container.appendChild(card);
+            });
+        }
+
+        function createGridCard(grid) {
+            const card = document.createElement('div');
+            card.className = 'grid-card';
+            card.onclick = () => viewGrid(grid);
+
+            const filledSamples = grid.samples.filter(s => s !== '').length;
+
+            card.innerHTML = `
+                <h3>${grid.name}</h3>
+                <div class="grid-preview-container">
+                    <canvas class="grid-preview" id="preview-${grid.id}"></canvas>
+                </div>
+                <div class="grid-card-footer">
+                    <span class="sample-count">${filledSamples}/${grid.orientation} samples</span>
+                    <div class="grid-card-buttons">
+                        <button class="btn btn-primary btn-edit" data-grid-id="${grid.id}">Edit</button>
+                        <button class="btn btn-danger btn-delete" data-grid-id="${grid.id}">Delete</button>
+                    </div>
+                </div>
+            `;
+
+            // Add event listeners after creating the card
+            setTimeout(() => {
+                const editBtn = card.querySelector('.btn-edit');
+                const deleteBtn = card.querySelector('.btn-delete');
+                
+                if (editBtn) {
+                    editBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        editGridById(grid.id);
+                    };
+                }
+                
+                if (deleteBtn) {
+                    deleteBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        deleteGrid(grid.id);
+                    };
+                }
+                
+                drawGridPreview(grid, `preview-${grid.id}`);
+            }, 0);
+
+            return card;
+        }
+
+        function drawGridPreview(grid, canvasId) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) {
+                console.warn('Canvas not found:', canvasId);
+                return;
+            }
+            
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                console.error('Failed to get canvas context');
+                return;
+            }
+            
+            // Set canvas size
+            canvas.width = 200;
+            canvas.height = 200;
+            const width = canvas.width;
+            const height = canvas.height;
+
+            ctx.clearRect(0, 0, width, height);
+
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = Math.min(width, height) * 0.35;
+
+            // Draw outer circle
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+
+            // Draw mark on the right INSIDE
+            ctx.beginPath();
+            const markStart = centerX + radius - 15;
+            const markEnd = centerX + radius;
+            ctx.moveTo(markStart, centerY);
+            ctx.lineTo(markEnd, centerY);
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // Draw sample divisions
+            if (grid.orientation === 3) {
+                drawThreeSamplePreview(ctx, centerX, centerY, radius, grid.samples);
+            } else {
+                drawFourSamplePreview(ctx, centerX, centerY, radius, grid.samples);
+            }
+        }
+
+        function drawThreeSamplePreview(ctx, cx, cy, r, samples) {
+            const positions = [90, 180, 270];
+            const crescentRadius = r * 0.45;
+            
+            // Save and clip
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.clip();
+            
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            
+            positions.forEach((angleDeg) => {
+                const angleRad = angleDeg * Math.PI / 180;
+                const crescentCenterX = cx + r * Math.cos(angleRad);
+                const crescentCenterY = cy + r * Math.sin(angleRad);
+                const arcStart = (angleDeg + 90) * Math.PI / 180;
+                const arcEnd = (angleDeg + 270) * Math.PI / 180;
+                
+                ctx.beginPath();
+                ctx.arc(crescentCenterX, crescentCenterY, crescentRadius, arcStart, arcEnd);
+                ctx.stroke();
+            });
+            
+            ctx.restore();
+            
+            // Draw sample labels
+            ctx.font = 'bold 20px Arial';
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            const labelDist = r - crescentRadius * 0.5;
+            
+            if (samples[0]) ctx.fillText(samples[0], cx, cy - labelDist);
+            if (samples[1]) ctx.fillText(samples[1], cx - labelDist, cy);
+            if (samples[2]) ctx.fillText(samples[2], cx, cy + labelDist);
+        }
+
+        function drawFourSamplePreview(ctx, cx, cy, r, samples) {
+            const positions = [45, 135, 225, 315];
+            const crescentRadius = r * 0.45;
+            
+            // Save and clip
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.clip();
+            
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            
+            positions.forEach((angleDeg) => {
+                const angleRad = angleDeg * Math.PI / 180;
+                const crescentCenterX = cx + r * Math.cos(angleRad);
+                const crescentCenterY = cy + r * Math.sin(angleRad);
+                const arcStart = (angleDeg + 90) * Math.PI / 180;
+                const arcEnd = (angleDeg + 270) * Math.PI / 180;
+                
+                ctx.beginPath();
+                ctx.arc(crescentCenterX, crescentCenterY, crescentRadius, arcStart, arcEnd);
+                ctx.stroke();
+            });
+            
+            ctx.restore();
+            
+            // Draw sample labels
+            ctx.font = 'bold 20px Arial';
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            const labelDist = r - crescentRadius * 0.5;
+            
+            if (samples[0]) ctx.fillText(samples[0], cx + labelDist * 0.707, cy - labelDist * 0.707);
+            if (samples[1]) ctx.fillText(samples[1], cx - labelDist * 0.707, cy - labelDist * 0.707);
+            if (samples[2]) ctx.fillText(samples[2], cx - labelDist * 0.707, cy + labelDist * 0.707);
+            if (samples[3]) ctx.fillText(samples[3], cx + labelDist * 0.707, cy + labelDist * 0.707);
+        }
+
+        function viewGrid(grid) {
+            currentViewGrid = grid;
+            document.getElementById('viewGridTitle').textContent = grid.name;
+            document.getElementById('viewGridModal').style.display = 'block';
+            
+            setTimeout(() => {
+                drawGridDetail(grid);
+            }, 0);
+        }
+
+        function closeViewGridModal() {
+            document.getElementById('viewGridModal').style.display = 'none';
+            currentViewGrid = null;
+        }
+
+        function editGrid() {
+            if (!currentViewGrid) return;
+            
+            // Store grid data before closing modal
+            const gridToEdit = currentViewGrid;
+            
+            // Close view modal
+            closeViewGridModal();
+            
+            // Open add grid modal in edit mode
+            document.getElementById('gridName').value = gridToEdit.name;
+            document.querySelector(`input[value="${gridToEdit.orientation}"]`).checked = true;
+            editorSamples = [...gridToEdit.samples];
+            while (editorSamples.length < 4) editorSamples.push('');
+            
+            // Store the grid ID being edited
+            document.getElementById('addGridModal').dataset.editingId = gridToEdit.id;
+            
+            document.getElementById('addGridModal').style.display = 'block';
+            
+            setTimeout(() => {
+                const canvas = document.getElementById('gridEditorCanvas');
+                if (gridToEdit.orientation === 3) {
+                    drawThreeSampleEditor(canvas);
+                } else {
+                    drawFourSampleEditor(canvas);
+                }
+            }, 0);
+        }
+
+        function editGridById(gridId) {
+            const grid = grids.find(g => g.id === gridId);
+            if (!grid) return;
+            
+            // Open add grid modal in edit mode
+            document.getElementById('gridName').value = grid.name;
+            document.querySelector(`input[value="${grid.orientation}"]`).checked = true;
+            editorSamples = [...grid.samples];
+            while (editorSamples.length < 4) editorSamples.push('');
+            
+            // Store the grid ID being edited
+            document.getElementById('addGridModal').dataset.editingId = grid.id;
+            
+            document.getElementById('addGridModal').style.display = 'block';
+            
+            setTimeout(() => {
+                const canvas = document.getElementById('gridEditorCanvas');
+                if (grid.orientation === 3) {
+                    drawThreeSampleEditor(canvas);
+                } else {
+                    drawFourSampleEditor(canvas);
+                }
+            }, 0);
+        }
+
+        function drawGridDetail(grid) {
+            const canvas = document.getElementById('gridDetailCanvas');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+
+            ctx.clearRect(0, 0, width, height);
+
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = Math.min(width, height) * 0.32;
+
+            // Draw outer circle
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Draw mark on the right INSIDE
+            ctx.beginPath();
+            const markStart = centerX + radius - 30;
+            const markEnd = centerX + radius;
+            ctx.moveTo(markStart, centerY);
+            ctx.lineTo(markEnd, centerY);
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 5;
+            ctx.stroke();
+
+            // Draw sample divisions with labels
+            if (grid.orientation === 3) {
+                drawThreeSampleDetail(ctx, centerX, centerY, radius, grid.samples);
+            } else {
+                drawFourSampleDetail(ctx, centerX, centerY, radius, grid.samples);
+            }
+        }
+
+        function drawThreeSampleDetail(ctx, cx, cy, r, samples) {
+            const positions = [90, 180, 270];
+            const crescentRadius = r * 0.45;
+            
+            // Save and clip
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.clip();
+            
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2.5;
+            
+            positions.forEach((angleDeg) => {
+                const angleRad = angleDeg * Math.PI / 180;
+                const crescentCenterX = cx + r * Math.cos(angleRad);
+                const crescentCenterY = cy + r * Math.sin(angleRad);
+                const arcStart = (angleDeg + 90) * Math.PI / 180;
+                const arcEnd = (angleDeg + 270) * Math.PI / 180;
+                
+                ctx.beginPath();
+                ctx.arc(crescentCenterX, crescentCenterY, crescentRadius, arcStart, arcEnd);
+                ctx.stroke();
+            });
+            
+            // Draw labels BEFORE restore (inside clipping)
+            ctx.font = 'bold 32px Arial';
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            const labelDist = r - crescentRadius * 0.5;
+            
+            ctx.fillText(samples[0] || 'Position 1', cx, cy - labelDist);
+            ctx.fillText(samples[1] || 'Position 2', cx - labelDist, cy);
+            ctx.fillText(samples[2] || 'Position 3', cx, cy + labelDist);
+            
+            ctx.restore();
+        }
+
+        function drawFourSampleDetail(ctx, cx, cy, r, samples) {
+            const positions = [45, 135, 225, 315];
+            const crescentRadius = r * 0.45;
+            
+            // Save and clip
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.clip();
+            
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2.5;
+            
+            positions.forEach((angleDeg) => {
+                const angleRad = angleDeg * Math.PI / 180;
+                const crescentCenterX = cx + r * Math.cos(angleRad);
+                const crescentCenterY = cy + r * Math.sin(angleRad);
+                const arcStart = (angleDeg + 90) * Math.PI / 180;
+                const arcEnd = (angleDeg + 270) * Math.PI / 180;
+                
+                ctx.beginPath();
+                ctx.arc(crescentCenterX, crescentCenterY, crescentRadius, arcStart, arcEnd);
+                ctx.stroke();
+            });
+            
+            // Draw labels BEFORE restore
+            ctx.font = 'bold 32px Arial';
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            const labelDist = r - crescentRadius * 0.5;
+            
+            ctx.fillText(samples[0] || 'Position 1', cx + labelDist * 0.707, cy - labelDist * 0.707);
+            ctx.fillText(samples[1] || 'Position 2', cx - labelDist * 0.707, cy - labelDist * 0.707);
+            ctx.fillText(samples[2] || 'Position 3', cx - labelDist * 0.707, cy + labelDist * 0.707);
+            ctx.fillText(samples[3] || 'Position 4', cx + labelDist * 0.707, cy + labelDist * 0.707);
+            
+            ctx.restore();
+        }
+
+        async function deleteGrid(gridId) {
+            if (!confirm('Are you sure you want to delete this grid?')) {
+                return;
+            }
+
+            console.log('Deleting grid:', gridId);
+            
+            // Remove from array first
+            const index = grids.findIndex(g => g.id === gridId);
+            console.log('Grid index:', index);
+            
+            if (index !== -1) {
+                grids.splice(index, 1);
+                console.log('Grids after removal:', grids.length);
+            }
+            
+            // Update UI immediately
+            renderGridBank();
+            console.log('Grid deleted successfully');
+            
+            // Save to Sheets in background
+            saveAllGridsToSheets().catch(err => {
+                console.error('Background save failed:', err);
+            });
+        }
+
+        async function deleteCurrentGrid() {
+            if (!currentViewGrid) return;
+            
+            if (!confirm(`Are you sure you want to delete ${currentViewGrid.name}?`)) {
+                return;
+            }
+
+            // Delete without additional confirm
+            const gridId = currentViewGrid.id;
+            console.log('Deleting grid:', gridId);
+            
+            // Remove from array
+            const index = grids.findIndex(g => g.id === gridId);
+            if (index !== -1) {
+                grids.splice(index, 1);
+            }
+            
+            // Update UI and close modal immediately
+            renderGridBank();
+            closeViewGridModal();
+            
+            // Save to Sheets in background
+            saveAllGridsToSheets().catch(err => {
+                console.error('Background save failed:', err);
+            });
+        }
+
+        function filterGrids() {
+            const gridSearch = document.getElementById('searchGrid').value.toLowerCase();
+            const sampleSearch = document.getElementById('searchSample').value.toLowerCase();
+
+            const cards = document.querySelectorAll('.grid-card');
+            
+            grids.forEach((grid, index) => {
+                const card = cards[index];
+                if (!card) return;
+
+                const matchesGrid = grid.name.toLowerCase().includes(gridSearch);
+                const matchesSample = grid.samples.some(s => 
+                    s.toLowerCase().includes(sampleSearch)
+                );
+
+                if ((gridSearch === '' || matchesGrid) && 
+                    (sampleSearch === '' || matchesSample)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
